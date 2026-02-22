@@ -4,12 +4,10 @@ from PIL import Image
 import numpy as np
 import os
 
-# --- Page Config ---
 st.set_page_config(page_title="Butterfly Identifier", layout="centered")
 
 st.title("🦋 Butterfly Species Identifier")
 
-# 1. Check if model file exists
 model_path = 'butterfly_final_eff.keras'
 
 if not os.path.exists(model_path):
@@ -17,14 +15,15 @@ if not os.path.exists(model_path):
 else:
     st.info("Loading AI Model... please wait.")
     
-    # 2. Load Model with caching to prevent reload loops
-    @st.cache_resource
-    def load_my_model():
-        try:
-            return tf.keras.models.load_model(model_path)
-        except Exception as e:
-            st.error(f"Error loading model: {e}")
-            return None
+@st.cache_resource
+def load_my_model():
+    try:
+        # The fix: compile=False prevents Keras from trying to reconstruct 
+        # the training gradients, which is where the BatchNormalization error lives.
+        return tf.keras.models.load_model(model_path, compile=False)
+    except Exception as e:
+        st.error(f"Error loading model: {e}")
+        return None
 
     model = load_my_model()
 
@@ -74,4 +73,5 @@ else:
                 conf = 100 * np.max(score)
                 
                 st.subheader(f"Result: {label}")
+
                 st.write(f"Confidence: {conf:.2f}%")
